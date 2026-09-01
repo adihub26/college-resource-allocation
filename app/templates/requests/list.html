@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Resource Requests
+{% endblock %}
+
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto p-6">
+
+
+    <!-- Header -->
+
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+
+            <h1 class="text-3xl font-bold">
+                Resource Requests
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Manage resource allocation requests
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('main.create_resource_request') }}"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+            + Create Request
+        </a>
+
+    </div>
+
+
+    <!-- Status Summary -->
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+
+
+        <!-- Pending -->
+
+        <div class="bg-white rounded-lg shadow p-4">
+
+            <p class="text-sm text-gray-500">
+                Pending
+            </p>
+
+            <p class="text-2xl font-bold text-yellow-600 mt-1">
+
+                {{ requests
+                    |selectattr("status", "equalto", "Pending")
+                    |list
+                    |length
+                }}
+
+            </p>
+
+        </div>
+
+
+        <!-- Approved -->
+
+        <div class="bg-white rounded-lg shadow p-4">
+
+            <p class="text-sm text-gray-500">
+                Approved
+            </p>
+
+            <p class="text-2xl font-bold text-green-600 mt-1">
+
+                {{ requests
+                    |selectattr("status", "equalto", "Approved")
+                    |list
+                    |length
+                }}
+
+            </p>
+
+        </div>
+
+
+        <!-- Rejected -->
+
+        <div class="bg-white rounded-lg shadow p-4">
+
+            <p class="text-sm text-gray-500">
+                Rejected
+            </p>
+
+            <p class="text-2xl font-bold text-red-600 mt-1">
+
+                {{ requests
+                    |selectattr("status", "equalto", "Rejected")
+                    |list
+                    |length
+                }}
+
+            </p>
+
+        </div>
+
+
+        <!-- Cancelled -->
+
+        <div class="bg-white rounded-lg shadow p-4">
+
+            <p class="text-sm text-gray-500">
+                Cancelled
+            </p>
+
+            <p class="text-2xl font-bold text-gray-500 mt-1">
+
+                {{ requests
+                    |selectattr("status", "equalto", "Cancelled")
+                    |list
+                    |length
+                }}
+
+            </p>
+
+        </div>
+
+
+        <!-- Completed -->
+
+        <div class="bg-white rounded-lg shadow p-4">
+
+            <p class="text-sm text-gray-500">
+                Completed
+            </p>
+
+            <p class="text-2xl font-bold text-blue-600 mt-1">
+
+                {{ requests
+                    |selectattr("status", "equalto", "Completed")
+                    |list
+                    |length
+                }}
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Requests Table -->
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full">
+
+                <thead class="bg-gray-200">
+
+                    <tr>
+
+                        <th class="text-left p-3">
+                            Event
+                        </th>
+
+                        <th class="text-left p-3">
+                            Start
+                        </th>
+
+                        <th class="text-left p-3">
+                            End
+                        </th>
+
+                        <th class="text-left p-3">
+                            Resources
+                        </th>
+
+                        <th class="text-left p-3">
+                            Status
+                        </th>
+
+                        <th class="text-left p-3">
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% if requests %}
+
+                        {% for resource_request in requests %}
+
+                            <tr class="border-t hover:bg-gray-50">
+
+
+                                <!-- Event -->
+
+                                <td class="p-3 font-medium">
+
+                                    {% if resource_request.event %}
+
+                                        {{ resource_request.event.event_name }}
+
+                                    {% else %}
+
+                                        Unknown Event
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Start -->
+
+                                <td class="p-3 whitespace-nowrap">
+
+                                    {% if resource_request.start_datetime %}
+
+                                        {{ resource_request.start_datetime.strftime(
+                                            '%d %b %Y, %I:%M %p'
+                                        ) }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- End -->
+
+                                <td class="p-3 whitespace-nowrap">
+
+                                    {% if resource_request.end_datetime %}
+
+                                        {{ resource_request.end_datetime.strftime(
+                                            '%d %b %Y, %I:%M %p'
+                                        ) }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Resources -->
+
+                                <td class="p-3">
+
+                                    {% if resource_request.request_resources %}
+
+                                        {% for item in resource_request.request_resources %}
+
+                                            <div class="mb-1">
+
+                                                {% if item.resource %}
+
+                                                    {{ item.resource.name }}
+
+                                                {% else %}
+
+                                                    Unknown Resource
+
+                                                {% endif %}
+
+                                                <span class="text-gray-500">
+                                                    × {{ item.quantity }}
+                                                </span>
+
+                                            </div>
+
+                                        {% endfor %}
+
+                                    {% else %}
+
+                                        <span class="text-gray-500">
+                                            No resources
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Status -->
+
+                                <td class="p-3">
+
+                                    {% if resource_request.status == "Pending" %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-700"
+                                        >
+                                            Pending
+                                        </span>
+
+
+                                    {% elif resource_request.status == "Approved" %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-green-100 text-green-700"
+                                        >
+                                            Approved
+                                        </span>
+
+
+                                    {% elif resource_request.status == "Rejected" %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-red-100 text-red-700"
+                                        >
+                                            Rejected
+                                        </span>
+
+
+                                    {% elif resource_request.status == "Cancelled" %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700"
+                                        >
+                                            Cancelled
+                                        </span>
+
+
+                                    {% elif resource_request.status == "Completed" %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700"
+                                        >
+                                            Completed
+                                        </span>
+
+
+                                    {% else %}
+
+                                        <span
+                                            class="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
+                                        >
+                                            {{ resource_request.status }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Actions -->
+
+                                <td class="p-3">
+
+                                    {% if resource_request.status == "Pending" %}
+
+                                        <div class="flex gap-2">
+
+
+                                            <!-- Approve -->
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for(
+                                                    'main.approve_request',
+                                                    request_id=resource_request.id
+                                                ) }}"
+                                            >
+
+                                                <button
+                                                    type="submit"
+                                                    class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                                                    onclick="return confirm('Are you sure you want to approve this request?');"
+                                                >
+                                                    Approve
+                                                </button>
+
+                                            </form>
+
+
+                                            <!-- Reject -->
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for(
+                                                    'main.reject_request',
+                                                    request_id=resource_request.id
+                                                ) }}"
+                                            >
+
+                                                <button
+                                                    type="submit"
+                                                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                                                    onclick="return confirm('Are you sure you want to reject this request?');"
+                                                >
+                                                    Reject
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+
+
+                                    {% elif resource_request.status == "Approved" %}
+
+                                        <!-- Cancel -->
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for(
+                                                'main.cancel_resource_request',
+                                                request_id=resource_request.id
+                                            ) }}"
+                                        >
+
+                                            <button
+                                                type="submit"
+                                                class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                                                onclick="return confirm('Are you sure you want to cancel this request?');"
+                                            >
+                                                Cancel
+                                            </button>
+
+                                        </form>
+
+
+                                    {% else %}
+
+                                        <span class="text-gray-500">
+                                            No actions
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                            </tr>
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="p-10 text-center text-gray-500"
+                            >
+
+                                <p class="text-lg font-medium">
+                                    No resource requests found.
+                                </p>
+
+                                <p class="text-sm mt-1">
+                                    Create a request to allocate resources.
+                                </p>
+
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+{% endblock %}

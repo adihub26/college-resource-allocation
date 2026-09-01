@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Resource Availability</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-100">
+
+    <div class="max-w-6xl mx-auto mt-10 bg-white p-6 rounded-lg shadow">
+
+        <!-- Header -->
+
+        <div class="mb-6">
+
+            <h1 class="text-3xl font-bold">
+                Resource Availability
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Check the current availability of college resources.
+            </p>
+
+        </div>
+
+
+        <!-- Navigation -->
+
+        <div class="mb-6 flex gap-3">
+
+            <a
+                href="{{ url_for('main.dashboard') }}"
+                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            >
+                Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('main.resources') }}"
+                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            >
+                Resources
+            </a>
+
+            <a
+                href="{{ url_for('main.resource_requests') }}"
+                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            >
+                Requests
+            </a>
+
+            <a
+                href="{{ url_for('main.allocations') }}"
+                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            >
+                Allocations
+            </a>
+
+        </div>
+
+
+        <!-- Availability Table -->
+
+        <div class="border rounded-lg overflow-hidden">
+
+            <table class="w-full">
+
+                <thead class="bg-gray-200">
+
+                    <tr>
+
+                        <th class="text-left p-3">
+                            Resource
+                        </th>
+
+                        <th class="text-left p-3">
+                            Type
+                        </th>
+
+                        <th class="text-left p-3">
+                            Capacity
+                        </th>
+
+                        <th class="text-left p-3">
+                            Status
+                        </th>
+
+                        <th class="text-left p-3">
+                            Current Event
+                        </th>
+
+                        <th class="text-left p-3">
+                            Allocation Time
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% if availability_data %}
+
+                        {% for item in availability_data %}
+
+                            <tr class="border-t">
+
+                                <!-- Resource Name -->
+
+                                <td class="p-3 font-medium">
+                                    {{ item.resource.name }}
+                                </td>
+
+
+                                <!-- Resource Type -->
+
+                                <td class="p-3">
+                                    {{ item.resource.type }}
+                                </td>
+
+
+                                <!-- Capacity -->
+
+                                <td class="p-3">
+
+                                    {% if item.resource.capacity is not none %}
+
+                                        {{ item.resource.capacity }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Status -->
+
+                                <td class="p-3">
+
+                                    {% if not item.resource.is_active %}
+
+                                        <span
+                                            class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm"
+                                        >
+                                            Inactive
+                                        </span>
+
+                                    {% elif item.status == "Allocated" %}
+
+                                        <span
+                                            class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm"
+                                        >
+                                            Allocated
+                                        </span>
+
+                                    {% else %}
+
+                                        <span
+                                            class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
+                                        >
+                                            Available
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Current Event -->
+
+                                <td class="p-3">
+
+                                    {% if item.event_name %}
+
+                                        {{ item.event_name }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Allocation Time -->
+
+                                <td class="p-3">
+
+                                    {% if item.allocation_start %}
+
+                                        {{ item.allocation_start.strftime("%d-%m-%Y %H:%M") }}
+
+                                        -
+
+                                        {{ item.allocation_end.strftime("%H:%M") }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="p-6 text-center text-gray-500"
+                            >
+                                No resources found.
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

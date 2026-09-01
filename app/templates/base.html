@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+            College Resource Allocation
+        {% endblock %}
+    </title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-100">
+
+
+    <!-- Navigation -->
+
+    <nav class="bg-white shadow">
+
+        <div class="max-w-7xl mx-auto px-6">
+
+            <div class="flex justify-between items-center h-16">
+
+                <!-- Application Name -->
+
+                <a
+                    href="{{ url_for('main.dashboard') }}"
+                    class="text-xl font-bold"
+                >
+                    College Resource Allocation
+                </a>
+
+
+                <!-- Navigation -->
+
+                <div class="flex gap-5">
+
+                    <a
+                        href="{{ url_for('main.dashboard') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Dashboard
+                    </a>
+
+                    <a
+                        href="{{ url_for('main.events') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Events
+                    </a>
+
+                    <a
+                        href="{{ url_for('main.resources') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Resources
+                    </a>
+
+                    <!-- Resource Availability -->
+
+                    <a
+                        href="{{ url_for('main.resource_availability') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Availability
+                    </a>
+
+                    <a
+                        href="{{ url_for('main.resource_requests') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Requests
+                    </a>
+
+                    <a
+                        href="{{ url_for('main.allocations') }}"
+                        class="text-gray-600 hover:text-blue-600"
+                    >
+                        Allocations
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- Flash Messages -->
+
+    <div class="max-w-7xl mx-auto px-6 pt-4">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    {% if category == "error" %}
+
+                        <div class="mb-3 p-3 rounded bg-red-100 text-red-700">
+                            {{ message }}
+                        </div>
+
+                    {% else %}
+
+                        <div class="mb-3 p-3 rounded bg-green-100 text-green-700">
+                            {{ message }}
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+    </div>
+
+
+    <!-- Page Content -->
+
+    <main>
+
+        {% block content %}
+
+        {% endblock %}
+
+    </main>
+
+
+</body>
+
+</html>

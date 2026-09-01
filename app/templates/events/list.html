@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Events
+{% endblock %}
+
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto p-6">
+
+
+    <!-- Header -->
+
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+
+            <h1 class="text-3xl font-bold">
+                Events
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Manage college events
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('main.create_event') }}"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+            + Create Event
+        </a>
+
+    </div>
+
+
+    <!-- Filters -->
+
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+
+        <form
+            method="GET"
+            class="flex flex-wrap gap-4 items-end"
+        >
+
+
+            <!-- Status Filter -->
+
+            <div>
+
+                <label class="block mb-1 font-medium">
+                    Status
+                </label>
+
+                <select
+                    name="status"
+                    class="border rounded px-3 py-2"
+                >
+
+                    <option value="">
+                        All Statuses
+                    </option>
+
+                    {% for status in [
+                        "Draft",
+                        "Pending",
+                        "Approved",
+                        "Rejected",
+                        "Cancelled",
+                        "Completed"
+                    ] %}
+
+                        <option
+                            value="{{ status }}"
+                            {% if selected_status == status %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ status }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- Date Filter -->
+
+            <div>
+
+                <label class="block mb-1 font-medium">
+                    Date
+                </label>
+
+                <input
+                    type="date"
+                    name="date"
+                    value="{{ selected_date }}"
+                    class="border rounded px-3 py-2"
+                >
+
+            </div>
+
+
+            <!-- Filter -->
+
+            <button
+                type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+                Filter
+            </button>
+
+
+            <!-- Clear -->
+
+            <a
+                href="{{ url_for('main.events') }}"
+                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            >
+                Clear
+            </a>
+
+        </form>
+
+    </div>
+
+
+    <!-- Events Table -->
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full">
+
+                <thead class="bg-gray-200">
+
+                    <tr>
+
+                        <th class="text-left p-3">
+                            Event Name
+                        </th>
+
+                        <th class="text-left p-3">
+                            Organizer
+                        </th>
+
+                        <th class="text-left p-3">
+                            Attendance
+                        </th>
+
+                        <th class="text-left p-3">
+                            Start
+                        </th>
+
+                        <th class="text-left p-3">
+                            End
+                        </th>
+
+                        <th class="text-left p-3">
+                            Status
+                        </th>
+
+                        <th class="text-left p-3">
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% if events %}
+
+                        {% for event in events %}
+
+                            <tr class="border-t">
+
+
+                                <!-- Event Name -->
+
+                                <td class="p-3 font-medium">
+                                    {{ event.event_name }}
+                                </td>
+
+
+                                <!-- Organizer -->
+
+                                <td class="p-3">
+                                    {{ event.organizer }}
+                                </td>
+
+
+                                <!-- Attendance -->
+
+                                <td class="p-3">
+                                    {{ event.expected_attendance }}
+                                </td>
+
+
+                                <!-- Start -->
+
+                                <td class="p-3">
+
+                                    {{ event.start_datetime.strftime(
+                                        '%d %b %Y, %I:%M %p'
+                                    ) }}
+
+                                </td>
+
+
+                                <!-- End -->
+
+                                <td class="p-3">
+
+                                    {{ event.end_datetime.strftime(
+                                        '%d %b %Y, %I:%M %p'
+                                    ) }}
+
+                                </td>
+
+
+                                <!-- Status -->
+
+                                <td class="p-3">
+
+                                    {% if event.status == "Draft" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-700"
+                                        >
+                                            Draft
+                                        </span>
+
+                                    {% elif event.status == "Pending" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-yellow-100 text-yellow-700"
+                                        >
+                                            Pending
+                                        </span>
+
+                                    {% elif event.status == "Approved" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-green-100 text-green-700"
+                                        >
+                                            Approved
+                                        </span>
+
+                                    {% elif event.status == "Rejected" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-red-100 text-red-700"
+                                        >
+                                            Rejected
+                                        </span>
+
+                                    {% elif event.status == "Cancelled" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-gray-200 text-gray-700"
+                                        >
+                                            Cancelled
+                                        </span>
+
+                                    {% elif event.status == "Completed" %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-700"
+                                        >
+                                            Completed
+                                        </span>
+
+                                    {% else %}
+
+                                        <span
+                                            class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-700"
+                                        >
+                                            {{ event.status }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- Actions -->
+
+                                <td class="p-3">
+
+                                    {% if event.status != "Cancelled"
+                                        and event.status != "Completed" %}
+
+                                        <div class="flex gap-2">
+
+
+                                            <!-- Edit -->
+
+                                            <a
+                                                href="{{ url_for(
+                                                    'main.edit_event',
+                                                    event_id=event.id
+                                                ) }}"
+                                                class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                                            >
+                                                Edit
+                                            </a>
+
+
+                                            <!-- Cancel -->
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for(
+                                                    'main.cancel_event',
+                                                    event_id=event.id
+                                                ) }}"
+                                                onsubmit="return confirm('Are you sure you want to cancel this event?');"
+                                            >
+
+                                                <button
+                                                    type="submit"
+                                                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+
+                                    {% else %}
+
+                                        <span class="text-gray-500">
+                                            No actions
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                            </tr>
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="p-8 text-center text-gray-500"
+                            >
+                                No events found.
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+{% endblock %}

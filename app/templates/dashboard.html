@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Dashboard
+{% endblock %}
+
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto p-6">
+
+
+    <!-- Page Header -->
+
+    <div class="mb-8">
+
+        <h2 class="text-3xl font-bold">
+            Dashboard
+        </h2>
+
+        <p class="text-gray-600 mt-1">
+            Overview of college events and resource allocation
+        </p>
+
+    </div>
+
+
+    <!-- Statistics Cards -->
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+        <!-- Total Events -->
+
+        <div class="bg-white rounded-lg shadow p-6">
+
+            <p class="text-gray-500 text-sm">
+                Total Events
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ total_events }}
+            </p>
+
+            <a
+                href="{{ url_for('main.events') }}"
+                class="text-blue-600 text-sm mt-3 inline-block hover:underline"
+            >
+                View Events →
+            </a>
+
+        </div>
+
+
+        <!-- Total Resources -->
+
+        <div class="bg-white rounded-lg shadow p-6">
+
+            <p class="text-gray-500 text-sm">
+                Total Resources
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ total_resources }}
+            </p>
+
+            <p class="text-green-600 text-sm mt-3">
+                {{ active_resources }} active
+            </p>
+
+            <a
+                href="{{ url_for('main.resources') }}"
+                class="text-blue-600 text-sm mt-1 inline-block hover:underline"
+            >
+                View Resources →
+            </a>
+
+        </div>
+
+
+        <!-- Resource Requests -->
+
+        <div class="bg-white rounded-lg shadow p-6">
+
+            <p class="text-gray-500 text-sm">
+                Resource Requests
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ total_requests }}
+            </p>
+
+            <p class="text-yellow-600 text-sm mt-3">
+                {{ pending_requests }} pending
+            </p>
+
+            <a
+                href="{{ url_for('main.resource_requests') }}"
+                class="text-blue-600 text-sm mt-1 inline-block hover:underline"
+            >
+                Manage Requests →
+            </a>
+
+        </div>
+
+
+        <!-- Active Allocations -->
+
+        <div class="bg-white rounded-lg shadow p-6">
+
+            <p class="text-gray-500 text-sm">
+                Active Allocations
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ total_allocations }}
+            </p>
+
+            <p class="text-green-600 text-sm mt-3">
+                {{ approved_requests }} approved requests
+            </p>
+
+            <a
+                href="{{ url_for('main.allocations') }}"
+                class="text-blue-600 text-sm mt-1 inline-block hover:underline"
+            >
+                View Allocations →
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Quick Actions -->
+
+    <div class="bg-white rounded-lg shadow p-6 mt-8">
+
+        <h3 class="text-lg font-bold mb-4">
+            Quick Actions
+        </h3>
+
+        <div class="flex flex-wrap gap-3">
+
+            <a
+                href="{{ url_for('main.create_event') }}"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+                + Create Event
+            </a>
+
+            <a
+                href="{{ url_for('main.create_resource') }}"
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+                + Add Resource
+            </a>
+
+            <a
+                href="{{ url_for('main.create_resource_request') }}"
+                class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            >
+                + Create Request
+            </a>
+
+            <a
+                href="{{ url_for('main.resource_availability') }}"
+                class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+            >
+                Check Availability
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Recent Information -->
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+
+
+        <!-- Recent Events -->
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+
+            <div class="p-5 border-b">
+
+                <div class="flex justify-between items-center">
+
+                    <h3 class="text-lg font-bold">
+                        Recent Events
+                    </h3>
+
+                    <a
+                        href="{{ url_for('main.events') }}"
+                        class="text-blue-600 text-sm hover:underline"
+                    >
+                        View All
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            {% if recent_events %}
+
+                {% for event in recent_events %}
+
+                    <div class="p-4 border-b hover:bg-gray-50">
+
+                        <div class="flex justify-between gap-4">
+
+                            <div>
+
+                                <p class="font-medium">
+                                    {{ event.event_name }}
+                                </p>
+
+                                <p class="text-sm text-gray-500">
+                                    {{ event.organizer }}
+                                </p>
+
+                                <p class="text-sm text-gray-500 mt-1">
+                                    {{ event.expected_attendance }} attendees
+                                </p>
+
+                            </div>
+
+
+                            <div class="text-right">
+
+                                <p class="text-sm text-gray-500 whitespace-nowrap">
+
+                                    {{ event.start_datetime.strftime(
+                                        '%d %b %Y'
+                                    ) }}
+
+                                </p>
+
+                                <p class="text-xs text-gray-400 mt-1">
+
+                                    {{ event.start_datetime.strftime(
+                                        '%I:%M %p'
+                                    ) }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Event Status -->
+
+                        <div class="mt-3">
+
+                            {% if event.status == "Approved" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-green-100 text-green-700"
+                                >
+                                    Approved
+                                </span>
+
+
+                            {% elif event.status == "Pending" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700"
+                                >
+                                    Pending
+                                </span>
+
+
+                            {% elif event.status == "Completed" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700"
+                                >
+                                    Completed
+                                </span>
+
+
+                            {% elif event.status == "Cancelled" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-gray-200 text-gray-700"
+                                >
+                                    Cancelled
+                                </span>
+
+
+                            {% elif event.status == "Rejected" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-red-100 text-red-700"
+                                >
+                                    Rejected
+                                </span>
+
+
+                            {% elif event.status == "Draft" %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                >
+                                    Draft
+                                </span>
+
+
+                            {% else %}
+
+                                <span
+                                    class="inline-block px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                >
+                                    {{ event.status }}
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="p-8 text-center text-gray-500">
+                    No events found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- Recent Requests -->
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+
+            <div class="p-5 border-b">
+
+                <div class="flex justify-between items-center">
+
+                    <h3 class="text-lg font-bold">
+                        Recent Requests
+                    </h3>
+
+                    <a
+                        href="{{ url_for('main.resource_requests') }}"
+                        class="text-blue-600 text-sm hover:underline"
+                    >
+                        View All
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            {% if recent_requests %}
+
+                {% for resource_request in recent_requests %}
+
+                    <div class="p-4 border-b hover:bg-gray-50">
+
+                        <div class="flex justify-between gap-4">
+
+                            <div>
+
+                                <p class="font-medium">
+
+                                    {% if resource_request.event %}
+
+                                        {{ resource_request.event.event_name }}
+
+                                    {% else %}
+
+                                        Unknown Event
+
+                                    {% endif %}
+
+                                </p>
+
+
+                                <p class="text-sm text-gray-500 mt-1">
+
+                                    {% if resource_request.request_resources %}
+
+                                        {% for item in resource_request.request_resources %}
+
+                                            {% if item.resource %}
+
+                                                {{ item.resource.name }}
+
+                                            {% endif %}
+
+                                            {% if not loop.last %}
+                                                ,
+                                            {% endif %}
+
+                                        {% endfor %}
+
+                                    {% else %}
+
+                                        No resources
+
+                                    {% endif %}
+
+                                </p>
+
+                            </div>
+
+
+                            <!-- Request Status -->
+
+                            <div>
+
+                                {% if resource_request.status == "Pending" %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700"
+                                    >
+                                        Pending
+                                    </span>
+
+
+                                {% elif resource_request.status == "Approved" %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-green-100 text-green-700"
+                                    >
+                                        Approved
+                                    </span>
+
+
+                                {% elif resource_request.status == "Rejected" %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-red-100 text-red-700"
+                                    >
+                                        Rejected
+                                    </span>
+
+
+                                {% elif resource_request.status == "Cancelled" %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-gray-200 text-gray-700"
+                                    >
+                                        Cancelled
+                                    </span>
+
+
+                                {% elif resource_request.status == "Completed" %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700"
+                                    >
+                                        Completed
+                                    </span>
+
+
+                                {% else %}
+
+                                    <span
+                                        class="inline-block px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                    >
+                                        {{ resource_request.status }}
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="p-8 text-center text-gray-500">
+                    No resource requests found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+{% endblock %}
