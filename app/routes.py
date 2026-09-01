@@ -35,6 +35,34 @@ def sync_event_status(event):
     if event.status == "Completed":
         return
 
+    now = current_ist_time()
+
+    if (
+        event.status == "Approved"
+        and event.end_datetime <= now
+    ):
+
+        event.status = "Completed"
+
+        resource_requests = ResourceRequest.query.filter(
+            ResourceRequest.event_id == event.id,
+            ResourceRequest.status == "Approved"
+        ).all()
+
+        for resource_request in resource_requests:
+
+            resource_request.status = "Completed"
+
+            allocations = Allocation.query.filter(
+                Allocation.request_id == resource_request.id,
+                Allocation.status == "Allocated"
+            ).all()
+
+            for allocation in allocations:
+                allocation.status = "Completed"
+
+        return
+
     resource_requests = ResourceRequest.query.filter_by(
         event_id=event.id
     ).all()
@@ -66,15 +94,12 @@ def update_completed_events():
 
     now = current_ist_time()
 
-    events_to_complete = Event.query.filter(
-        Event.status == "Approved",
-        Event.end_datetime <= now
-    ).all()
-
-    if not events_to_complete:
-        return
-
     try:
+
+        events_to_complete = Event.query.filter(
+            Event.status == "Approved",
+            Event.end_datetime <= now
+        ).all()
 
         for event in events_to_complete:
 
@@ -95,13 +120,11 @@ def update_completed_events():
                 ).all()
 
                 for allocation in allocations:
-
                     allocation.status = "Completed"
 
         db.session.commit()
 
     except Exception:
-
         db.session.rollback()
 
 
@@ -116,8 +139,11 @@ def dashboard():
 
     total_requests = ResourceRequest.query.count()
 
-    total_allocations = Allocation.query.filter_by(
-        status="Allocated"
+    total_allocations = ResourceRequest.query.join(
+        Allocation,
+        Allocation.request_id == ResourceRequest.id
+    ).filter(
+        Allocation.status == "Allocated"
     ).count()
 
     pending_requests = ResourceRequest.query.filter_by(
@@ -300,6 +326,7 @@ def create_event():
         try:
 
             db.session.add(event)
+
             db.session.commit()
 
             flash(
@@ -557,7 +584,6 @@ def cancel_event(event_id):
             ).all()
 
             for allocation in allocations:
-
                 allocation.status = "Cancelled"
 
         db.session.commit()
@@ -681,18 +707,6 @@ def resource_availability():
 
     for resource in resources:
 
-        if not resource.is_active:
-
-            availability_data.append({
-                "resource": resource,
-                "status": "Inactive",
-                "event_name": None,
-                "allocation_start": None,
-                "allocation_end": None
-            })
-
-            continue
-
         active_allocation = Allocation.query.filter(
             Allocation.resource_id == resource.id,
             Allocation.status == "Allocated",
@@ -704,6 +718,8 @@ def resource_availability():
 
         if active_allocation:
 
+            status = "Allocated"
+
             event = active_allocation.request.event
 
             event_name = (
@@ -712,23 +728,29 @@ def resource_availability():
                 else "Unknown Event"
             )
 
-            availability_data.append({
-                "resource": resource,
-                "status": "Allocated",
-                "event_name": event_name,
-                "allocation_start": active_allocation.start_datetime,
-                "allocation_end": active_allocation.end_datetime
-            })
+            allocation_start = (
+                active_allocation.start_datetime
+            )
+
+            allocation_end = (
+                active_allocation.end_datetime
+            )
 
         else:
 
-            availability_data.append({
-                "resource": resource,
-                "status": "Available",
-                "event_name": None,
-                "allocation_start": None,
-                "allocation_end": None
-            })
+            status = "Available"
+
+            event_name = None
+            allocation_start = None
+            allocation_end = None
+
+        availability_data.append({
+            "resource": resource,
+            "status": status,
+            "event_name": event_name,
+            "allocation_start": allocation_start,
+            "allocation_end": allocation_end
+        })
 
     return render_template(
         "resources/availability.html",
@@ -836,6 +858,7 @@ def create_resource():
         try:
 
             db.session.add(resource)
+
             db.session.commit()
 
             flash(
@@ -1338,7 +1361,6 @@ def create_resource_request():
                 )
 
             if event.status == "Draft":
-
                 event.status = "Pending"
 
             db.session.commit()
@@ -1378,7 +1400,6 @@ def resource_requests():
     try:
 
         for event in all_events:
-
             sync_event_status(event)
 
         db.session.commit()
@@ -1504,7 +1525,6 @@ def reject_request(request_id):
         event = resource_request.event
 
         if event:
-
             sync_event_status(event)
 
         db.session.commit()
@@ -1581,13 +1601,11 @@ def cancel_resource_request(request_id):
         ).all()
 
         for allocation in allocations:
-
             allocation.status = "Cancelled"
 
         event = resource_request.event
 
         if event:
-
             sync_event_status(event)
 
         db.session.commit()
