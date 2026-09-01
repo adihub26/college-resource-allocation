@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app import db
 
@@ -20,34 +21,17 @@ from app.services import (
 main = Blueprint("main", __name__)
 
 
-# =========================================================
-# EVENT STATUS SYNCHRONIZATION
-# =========================================================
+def current_ist_time():
+    return datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    ).replace(tzinfo=None)
+
 
 def sync_event_status(event):
-    """
-    Synchronize event status according to its
-    resource requests.
-
-    Rules:
-
-    Approved request exists
-        -> Event = Approved
-
-    No Approved request but Pending request exists
-        -> Event = Pending
-
-    All requests are Cancelled/Rejected
-        -> Event = Cancelled
-
-    Completed event
-        -> Remains Completed
-    """
 
     if not event:
         return
 
-    # Never automatically change a completed event
     if event.status == "Completed":
         return
 
@@ -55,7 +39,6 @@ def sync_event_status(event):
         event_id=event.id
     ).all()
 
-    # No requests = keep existing status
     if not resource_requests:
         return
 
@@ -69,28 +52,19 @@ def sync_event_status(event):
         for resource_request in resource_requests
     )
 
-    # Approved has highest priority
     if has_approved:
-
         event.status = "Approved"
 
     elif has_pending:
-
         event.status = "Pending"
 
     else:
-
-        # All requests are Rejected/Cancelled/Completed
         event.status = "Cancelled"
 
 
-# =========================================================
-# AUTOMATIC EVENT COMPLETION
-# =========================================================
-
 def update_completed_events():
 
-    now = datetime.now()
+    now = current_ist_time()
 
     events_to_complete = Event.query.filter(
         Event.status == "Approved",
@@ -104,15 +78,7 @@ def update_completed_events():
 
         for event in events_to_complete:
 
-            # -------------------------------------------------
-            # Complete event
-            # -------------------------------------------------
-
             event.status = "Completed"
-
-            # -------------------------------------------------
-            # Complete approved requests
-            # -------------------------------------------------
 
             resource_requests = ResourceRequest.query.filter(
                 ResourceRequest.event_id == event.id,
@@ -122,10 +88,6 @@ def update_completed_events():
             for resource_request in resource_requests:
 
                 resource_request.status = "Completed"
-
-                # -------------------------------------------------
-                # Complete allocations
-                # -------------------------------------------------
 
                 allocations = Allocation.query.filter(
                     Allocation.request_id == resource_request.id,
@@ -142,10 +104,6 @@ def update_completed_events():
 
         db.session.rollback()
 
-
-# =========================================================
-# DASHBOARD
-# =========================================================
 
 @main.route("/")
 def dashboard():
@@ -196,10 +154,6 @@ def dashboard():
     )
 
 
-# =========================================================
-# CREATE EVENT
-# =========================================================
-
 @main.route(
     "/events/create",
     methods=["GET", "POST"]
@@ -238,10 +192,6 @@ def create_event():
             ""
         ).strip()
 
-        # -------------------------------------------------
-        # Required fields
-        # -------------------------------------------------
-
         if not all([
             event_name,
             organizer,
@@ -259,10 +209,6 @@ def create_event():
             return render_template(
                 "events/create.html"
             )
-
-        # -------------------------------------------------
-        # Attendance validation
-        # -------------------------------------------------
 
         try:
 
@@ -289,10 +235,6 @@ def create_event():
             return render_template(
                 "events/create.html"
             )
-
-        # -------------------------------------------------
-        # Date/time validation
-        # -------------------------------------------------
 
         try:
 
@@ -326,10 +268,6 @@ def create_event():
                 "events/create.html"
             )
 
-        # -------------------------------------------------
-        # Status validation
-        # -------------------------------------------------
-
         valid_statuses = {
             "Draft",
             "Pending",
@@ -350,10 +288,6 @@ def create_event():
                 "events/create.html"
             )
 
-        # -------------------------------------------------
-        # Create event
-        # -------------------------------------------------
-
         event = Event(
             event_name=event_name,
             organizer=organizer,
@@ -366,7 +300,6 @@ def create_event():
         try:
 
             db.session.add(event)
-
             db.session.commit()
 
             flash(
@@ -391,10 +324,6 @@ def create_event():
         "events/create.html"
     )
 
-
-# =========================================================
-# EDIT EVENT
-# =========================================================
 
 @main.route(
     "/events/<int:event_id>/edit",
@@ -438,10 +367,6 @@ def edit_event(event_id):
             event.status
         ).strip()
 
-        # -------------------------------------------------
-        # Required fields
-        # -------------------------------------------------
-
         if not all([
             event_name,
             organizer,
@@ -459,10 +384,6 @@ def edit_event(event_id):
                 "events/edit.html",
                 event=event
             )
-
-        # -------------------------------------------------
-        # Attendance validation
-        # -------------------------------------------------
 
         try:
 
@@ -491,10 +412,6 @@ def edit_event(event_id):
                 "events/edit.html",
                 event=event
             )
-
-        # -------------------------------------------------
-        # Date/time validation
-        # -------------------------------------------------
 
         try:
 
@@ -530,10 +447,6 @@ def edit_event(event_id):
                 event=event
             )
 
-        # -------------------------------------------------
-        # Status validation
-        # -------------------------------------------------
-
         valid_statuses = {
             "Draft",
             "Pending",
@@ -554,10 +467,6 @@ def edit_event(event_id):
                 "events/edit.html",
                 event=event
             )
-
-        # -------------------------------------------------
-        # Update event
-        # -------------------------------------------------
 
         event.event_name = event_name
         event.organizer = organizer
@@ -594,10 +503,6 @@ def edit_event(event_id):
     )
 
 
-# =========================================================
-# CANCEL EVENT
-# =========================================================
-
 @main.route(
     "/events/<int:event_id>/cancel",
     methods=["POST"]
@@ -632,15 +537,7 @@ def cancel_event(event_id):
 
     try:
 
-        # -------------------------------------------------
-        # Cancel event
-        # -------------------------------------------------
-
         event.status = "Cancelled"
-
-        # -------------------------------------------------
-        # Find active requests
-        # -------------------------------------------------
 
         resource_requests = ResourceRequest.query.filter(
             ResourceRequest.event_id == event.id,
@@ -653,10 +550,6 @@ def cancel_event(event_id):
         for resource_request in resource_requests:
 
             resource_request.status = "Cancelled"
-
-            # -------------------------------------------------
-            # Cancel allocations
-            # -------------------------------------------------
 
             allocations = Allocation.query.filter(
                 Allocation.request_id == resource_request.id,
@@ -688,22 +581,16 @@ def cancel_event(event_id):
     )
 
 
-# =========================================================
-# EVENTS LIST
-# =========================================================
-
 @main.route("/events")
 def events():
 
     update_completed_events()
 
-    # Synchronize event statuses
     all_events = Event.query.all()
 
     try:
 
         for event in all_events:
-
             sync_event_status(event)
 
         db.session.commit()
@@ -724,19 +611,11 @@ def events():
 
     query = Event.query
 
-    # -------------------------------------------------
-    # Status filter
-    # -------------------------------------------------
-
     if status:
 
         query = query.filter(
             Event.status == status
         )
-
-    # -------------------------------------------------
-    # Date filter
-    # -------------------------------------------------
 
     if event_date:
 
@@ -772,10 +651,6 @@ def events():
     )
 
 
-# =========================================================
-# RESOURCES LIST
-# =========================================================
-
 @main.route("/resources")
 def resources():
 
@@ -791,10 +666,6 @@ def resources():
     )
 
 
-# =========================================================
-# RESOURCE AVAILABILITY
-# =========================================================
-
 @main.route("/resources/availability")
 def resource_availability():
 
@@ -804,22 +675,34 @@ def resource_availability():
         Resource.name.asc()
     ).all()
 
-    now = datetime.now()
+    now = current_ist_time()
 
     availability_data = []
 
     for resource in resources:
+
+        if not resource.is_active:
+
+            availability_data.append({
+                "resource": resource,
+                "status": "Inactive",
+                "event_name": None,
+                "allocation_start": None,
+                "allocation_end": None
+            })
+
+            continue
 
         active_allocation = Allocation.query.filter(
             Allocation.resource_id == resource.id,
             Allocation.status == "Allocated",
             Allocation.start_datetime <= now,
             Allocation.end_datetime > now
+        ).order_by(
+            Allocation.start_datetime.asc()
         ).first()
 
         if active_allocation:
-
-            status = "Allocated"
 
             event = active_allocation.request.event
 
@@ -829,39 +712,29 @@ def resource_availability():
                 else "Unknown Event"
             )
 
-            allocation_start = (
-                active_allocation.start_datetime
-            )
-
-            allocation_end = (
-                active_allocation.end_datetime
-            )
+            availability_data.append({
+                "resource": resource,
+                "status": "Allocated",
+                "event_name": event_name,
+                "allocation_start": active_allocation.start_datetime,
+                "allocation_end": active_allocation.end_datetime
+            })
 
         else:
 
-            status = "Available"
-
-            event_name = None
-            allocation_start = None
-            allocation_end = None
-
-        availability_data.append({
-            "resource": resource,
-            "status": status,
-            "event_name": event_name,
-            "allocation_start": allocation_start,
-            "allocation_end": allocation_end
-        })
+            availability_data.append({
+                "resource": resource,
+                "status": "Available",
+                "event_name": None,
+                "allocation_start": None,
+                "allocation_end": None
+            })
 
     return render_template(
         "resources/availability.html",
         availability_data=availability_data
     )
 
-
-# =========================================================
-# CREATE RESOURCE
-# =========================================================
 
 @main.route(
     "/resources/create",
@@ -890,10 +763,6 @@ def create_resource():
             request.form.get("is_active") == "on"
         )
 
-        # -------------------------------------------------
-        # Required fields
-        # -------------------------------------------------
-
         if not name or not resource_type:
 
             flash(
@@ -904,10 +773,6 @@ def create_resource():
             return render_template(
                 "resources/create.html"
             )
-
-        # -------------------------------------------------
-        # Valid resource types
-        # -------------------------------------------------
 
         valid_types = {
             "Auditorium",
@@ -928,10 +793,6 @@ def create_resource():
             return render_template(
                 "resources/create.html"
             )
-
-        # -------------------------------------------------
-        # Capacity validation
-        # -------------------------------------------------
 
         if capacity:
 
@@ -965,10 +826,6 @@ def create_resource():
 
             capacity = None
 
-        # -------------------------------------------------
-        # Create resource
-        # -------------------------------------------------
-
         resource = Resource(
             name=name,
             type=resource_type,
@@ -979,7 +836,6 @@ def create_resource():
         try:
 
             db.session.add(resource)
-
             db.session.commit()
 
             flash(
@@ -1004,10 +860,6 @@ def create_resource():
         "resources/create.html"
     )
 
-
-# =========================================================
-# EDIT RESOURCE
-# =========================================================
 
 @main.route(
     "/resources/<int:resource_id>/edit",
@@ -1036,10 +888,6 @@ def edit_resource(resource_id):
             ""
         ).strip()
 
-        # -------------------------------------------------
-        # Required fields
-        # -------------------------------------------------
-
         if not name or not resource_type:
 
             flash(
@@ -1051,10 +899,6 @@ def edit_resource(resource_id):
                 "resources/edit.html",
                 resource=resource
             )
-
-        # -------------------------------------------------
-        # Valid resource types
-        # -------------------------------------------------
 
         valid_types = {
             "Auditorium",
@@ -1076,10 +920,6 @@ def edit_resource(resource_id):
                 "resources/edit.html",
                 resource=resource
             )
-
-        # -------------------------------------------------
-        # Capacity validation
-        # -------------------------------------------------
 
         if capacity:
 
@@ -1114,10 +954,6 @@ def edit_resource(resource_id):
         else:
 
             capacity = None
-
-        # -------------------------------------------------
-        # Update resource
-        # -------------------------------------------------
 
         resource.name = name
         resource.type = resource_type
@@ -1150,10 +986,6 @@ def edit_resource(resource_id):
         resource=resource
     )
 
-
-# =========================================================
-# TOGGLE RESOURCE
-# =========================================================
 
 @main.route(
     "/resources/<int:resource_id>/toggle",
@@ -1199,10 +1031,6 @@ def toggle_resource(resource_id):
     )
 
 
-# =========================================================
-# CREATE RESOURCE REQUEST
-# =========================================================
-
 @main.route(
     "/resource-requests/create",
     methods=["GET", "POST"]
@@ -1238,10 +1066,6 @@ def create_resource_request():
             ""
         ).strip()
 
-        # -------------------------------------------------
-        # Required fields
-        # -------------------------------------------------
-
         if not event_id or not start_datetime or not end_datetime:
 
             flash(
@@ -1254,10 +1078,6 @@ def create_resource_request():
                 events=events,
                 resources=resources
             )
-
-        # -------------------------------------------------
-        # Validate event ID
-        # -------------------------------------------------
 
         try:
 
@@ -1275,10 +1095,6 @@ def create_resource_request():
                 events=events,
                 resources=resources
             )
-
-        # -------------------------------------------------
-        # Get event
-        # -------------------------------------------------
 
         event = db.session.get(
             Event,
@@ -1298,10 +1114,6 @@ def create_resource_request():
                 resources=resources
             )
 
-        # -------------------------------------------------
-        # Prevent invalid events
-        # -------------------------------------------------
-
         if event.status in [
             "Completed",
             "Cancelled",
@@ -1319,10 +1131,6 @@ def create_resource_request():
                 events=events,
                 resources=resources
             )
-
-        # -------------------------------------------------
-        # Date/time validation
-        # -------------------------------------------------
 
         try:
 
@@ -1360,10 +1168,6 @@ def create_resource_request():
                 resources=resources
             )
 
-        # -------------------------------------------------
-        # Request must be inside event time
-        # -------------------------------------------------
-
         if (
             start < event.start_datetime
             or
@@ -1380,10 +1184,6 @@ def create_resource_request():
                 events=events,
                 resources=resources
             )
-
-        # -------------------------------------------------
-        # Selected resources
-        # -------------------------------------------------
 
         selected_resources = []
 
@@ -1426,10 +1226,6 @@ def create_resource_request():
                     resources=resources
                 )
 
-            # -------------------------------------------------
-            # Physical spaces only allow quantity 1
-            # -------------------------------------------------
-
             if resource.type in [
                 "Auditorium",
                 "Laboratory"
@@ -1450,10 +1246,6 @@ def create_resource_request():
 
             if quantity > 0:
 
-                # -------------------------------------------------
-                # Active check
-                # -------------------------------------------------
-
                 if not resource.is_active:
 
                     flash(
@@ -1466,10 +1258,6 @@ def create_resource_request():
                         events=events,
                         resources=resources
                     )
-
-                # -------------------------------------------------
-                # Capacity check
-                # -------------------------------------------------
 
                 if resource.capacity is not None:
 
@@ -1512,10 +1300,6 @@ def create_resource_request():
                     (resource, quantity)
                 )
 
-        # -------------------------------------------------
-        # At least one resource
-        # -------------------------------------------------
-
         if not selected_resources:
 
             flash(
@@ -1528,10 +1312,6 @@ def create_resource_request():
                 events=events,
                 resources=resources
             )
-
-        # -------------------------------------------------
-        # Create resource request
-        # -------------------------------------------------
 
         resource_request = ResourceRequest(
             event_id=event.id,
@@ -1557,7 +1337,6 @@ def create_resource_request():
                     request_resource
                 )
 
-            # Draft event becomes Pending
             if event.status == "Draft":
 
                 event.status = "Pending"
@@ -1589,16 +1368,11 @@ def create_resource_request():
     )
 
 
-# =========================================================
-# RESOURCE REQUESTS LIST
-# =========================================================
-
 @main.route("/resource-requests")
 def resource_requests():
 
     update_completed_events()
 
-    # Synchronize all event statuses
     all_events = Event.query.all()
 
     try:
@@ -1622,10 +1396,6 @@ def resource_requests():
         requests=requests
     )
 
-
-# =========================================================
-# APPROVE REQUEST
-# =========================================================
 
 @main.route(
     "/resource-requests/<int:request_id>/approve",
@@ -1654,7 +1424,6 @@ def approve_request(request_id):
 
             if event:
 
-                # Approved request means event is approved
                 event.status = "Approved"
 
                 try:
@@ -1686,10 +1455,6 @@ def approve_request(request_id):
             "error"
         )
 
-        # -------------------------------------------------
-        # Show alternatives
-        # -------------------------------------------------
-
         for item in alternatives:
 
             if item["alternatives"]:
@@ -1710,10 +1475,6 @@ def approve_request(request_id):
         url_for("main.resource_requests")
     )
 
-
-# =========================================================
-# REJECT REQUEST
-# =========================================================
 
 @main.route(
     "/resource-requests/<int:request_id>/reject",
@@ -1740,7 +1501,6 @@ def reject_request(request_id):
 
         resource_request.status = "Rejected"
 
-        # Synchronize event
         event = resource_request.event
 
         if event:
@@ -1768,10 +1528,6 @@ def reject_request(request_id):
     )
 
 
-# =========================================================
-# CANCEL RESOURCE REQUEST
-# =========================================================
-
 @main.route(
     "/resource-requests/<int:request_id>/cancel",
     methods=["POST"]
@@ -1781,10 +1537,6 @@ def cancel_resource_request(request_id):
     resource_request = ResourceRequest.query.get_or_404(
         request_id
     )
-
-    # -------------------------------------------------
-    # Rejected request
-    # -------------------------------------------------
 
     if resource_request.status == "Rejected":
 
@@ -1797,10 +1549,6 @@ def cancel_resource_request(request_id):
             url_for("main.resource_requests")
         )
 
-    # -------------------------------------------------
-    # Already cancelled
-    # -------------------------------------------------
-
     if resource_request.status == "Cancelled":
 
         flash(
@@ -1811,10 +1559,6 @@ def cancel_resource_request(request_id):
         return redirect(
             url_for("main.resource_requests")
         )
-
-    # -------------------------------------------------
-    # Completed request
-    # -------------------------------------------------
 
     if resource_request.status == "Completed":
 
@@ -1829,15 +1573,7 @@ def cancel_resource_request(request_id):
 
     try:
 
-        # -------------------------------------------------
-        # Cancel request
-        # -------------------------------------------------
-
         resource_request.status = "Cancelled"
-
-        # -------------------------------------------------
-        # Cancel associated allocations
-        # -------------------------------------------------
 
         allocations = Allocation.query.filter_by(
             request_id=resource_request.id,
@@ -1848,19 +1584,11 @@ def cancel_resource_request(request_id):
 
             allocation.status = "Cancelled"
 
-        # -------------------------------------------------
-        # Synchronize event
-        # -------------------------------------------------
-
         event = resource_request.event
 
         if event:
 
             sync_event_status(event)
-
-        # -------------------------------------------------
-        # Commit
-        # -------------------------------------------------
 
         db.session.commit()
 
@@ -1882,10 +1610,6 @@ def cancel_resource_request(request_id):
         url_for("main.resource_requests")
     )
 
-
-# =========================================================
-# ALLOCATIONS
-# =========================================================
 
 @main.route("/allocations")
 def allocations():
